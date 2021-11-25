@@ -23,9 +23,9 @@ class LatentEncoder(Module):
         else:
             return mean
 
-class TimeSeriesVAE(Module):
+class SequenceVAE(Module):
     def __init__(self, input_size: int, seq_len: int, hidden_sizes: list, cell_type = RNN):
-        super(TimeSeriesVAE, self).__init__()
+        super(SequenceVAE, self).__init__()
         self.encoder = SeqenceEncoder(
             input_size=input_size, 
             hidden_sizes=hidden_sizes, 

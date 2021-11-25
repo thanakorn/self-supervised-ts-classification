@@ -13,3 +13,6 @@ class ECGDataset(Dataset):
             return x, y
         else:
             return x
+
+    def __len__(self):
+        return self.data.shape[0]
