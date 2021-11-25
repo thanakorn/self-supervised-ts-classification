@@ -2,6 +2,7 @@ import torch
 from torch.nn import Module, RNN, LSTM, Linear, init
 from model.sequence_encoder import SeqenceEncoder
 from model.sequence_decoder import SeqenceDecoder
+from utils.utils import get_class
 
 class LatentEncoder(Module):
     def __init__(self, hidden_dim, embedding_dim):
@@ -39,6 +40,15 @@ class SequenceVAE(Module):
             hidden_dims=hidden_dims[::-1], 
             cell_type=cell_type
         )
+
+    @classmethod
+    def from_config(cls, config: dict):
+        return SequenceVAE(
+                input_dim=int(config['input_dim']), 
+                seq_len=int(config['len']), 
+                hidden_dims=[int(c) for c in config['hidden_dims'].split(',')], 
+                cell_type=get_class('torch.nn', config['cell_type'])
+               )
 
     def forward(self, x):
         x = self.encoder(x)
