@@ -3,12 +3,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data.dataloader import DataLoader
-from torch.nn import LSTM, L1Loss
-from torch.optim import Adam
+from tqdm import tqdm
+from sklearn.manifold import TSNE
+from configparser import ConfigParser
 from dataloader.ecg_dataset import ECGDataset
 from model.sequence_vae import SequenceVAE
-from tqdm import tqdm
-from argparse import ArgumentParser
+from utils.utils import *
 
 def compute_loss(loss_fn, input, output):
     recon, mean, logvar = output
@@ -17,19 +17,21 @@ def compute_loss(loss_fn, input, output):
     loss = recon_loss + kl_loss
     return loss
 
-def main(args):
-    data = pd.read_csv('data/ECG5000_TRAIN.txt', delimiter='  ', header=None)
-    X = np.expand_dims(data.values[:,1:], axis=-1)
-    Y = data.values[:,0].astype(int)
+def main():
+    conf = ConfigParser()
+    conf.read('config.cfg')
 
+    data = pd.read_csv(conf['data']['path'], delimiter='  ', header=None)
+    X = np.expand_dims(data.values[:,1:], axis=-1)
     dataset = ECGDataset(X)
     dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
 
-    vae = SequenceVAE(input_dim=X.shape[-1], seq_len=X.shape[1], hidden_dims=[64, 32, 16], cell_type=LSTM)
-    optimizer = Adam(vae.parameters(), lr=1e-3)
-    loss_fn = L1Loss()
-    
-    epochs = args.epochs
+    vae = SequenceVAE.from_config(conf._sections['model'])
+
+    train_conf = conf['train']
+    optimizer = get_optimizer(train_conf.get('optimizer'))(vae.parameters(), lr=train_conf.getfloat('lr'))
+    loss_fn = get_loss_fn(train_conf.get('loss_fn'))()
+    epochs = train_conf.getint('epochs')
     for ep in range(epochs):
         ep_loss = 0
         for x in tqdm(dataloader, desc=f'Epoch {ep + 1}'):
@@ -39,6 +41,7 @@ def main(args):
             ep_loss = ep_loss + loss.item()
             loss.backward()
             optimizer.step()
+
     torch.save(vae.state_dict(), 'vae.cfg')
     
     # Generate sample output
@@ -46,7 +49,7 @@ def main(args):
     sample_indices = np.random.permutation(X.shape[0]).tolist()[:5]
     samples = torch.tensor(X[sample_indices]).float()
     samples_out = vae(samples).detach().numpy()
-    fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(8,10))
+    _, axes = plt.subplots(nrows=5, ncols=2, figsize=(8,10))
     for i, ax in enumerate(axes):
         axes[i][0].plot(samples[i])
         axes[i][1].plot(samples_out[i], color='red')
@@ -56,8 +59,13 @@ def main(args):
             axes[i][1].set_title('Output')
     plt.savefig('output.png', bbox_inches='tight')
 
+    # Visualize embedding vectors
+    embeddings = vae.encoder(torch.tensor(X).float()).detach().numpy()
+    dim_reductor = TSNE(n_components=2)
+    r_embeddings = dim_reductor.fit_transform(embeddings)
+    plt.figure()
+    plt.scatter(r_embeddings[:,0], r_embeddings[:,1], marker='.')
+    plt.savefig('embeddings.png', bbox_inches='tight')
+
 if __name__=='__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=20)
-    args = parser.parse_args()
-    main(args)
+    main()
