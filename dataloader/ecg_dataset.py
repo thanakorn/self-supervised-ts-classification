@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data.dataset import Dataset
 
 class ECGDataset(Dataset):
@@ -6,10 +7,10 @@ class ECGDataset(Dataset):
         self.labels = labels
 
     def __getitem__(self, index):
-        x = self.data[index]
+        x = torch.tensor(self.data[index]).float()
         
         if self.labels is not None:
-            y = self.labels[index]
+            y = torch.tensor(self.labels[index])
             return x, y
         else:
             return x

@@ -24,19 +24,19 @@ class LatentEncoder(Module):
             return mean
 
 class SequenceVAE(Module):
-    def __init__(self, input_size: int, seq_len: int, hidden_sizes: list, cell_type = RNN):
+    def __init__(self, input_dim: int, seq_len: int, hidden_dims: list, cell_type = RNN):
         super(SequenceVAE, self).__init__()
         self.encoder = SeqenceEncoder(
-            input_size=input_size, 
-            hidden_sizes=hidden_sizes, 
+            input_dim=input_dim, 
+            hidden_dims=hidden_dims, 
             cell_type=cell_type
         )
-        self.laten_encoder = LatentEncoder(hidden_sizes[-1], hidden_sizes[-1])
+        self.laten_encoder = LatentEncoder(hidden_dims[-1], hidden_dims[-1])
         self.decoder = SeqenceDecoder(
-            input_size=hidden_sizes[-1], 
-            output_size=input_size, 
-            seq_len=seq_len, 
-            hidden_sizes=hidden_sizes[::-1], 
+            input_dim=hidden_dims[-1], 
+            output_dim=input_dim, 
+            output_len=seq_len, 
+            hidden_dims=hidden_dims[::-1], 
             cell_type=cell_type
         )
 
