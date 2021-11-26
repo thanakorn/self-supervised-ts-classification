@@ -42,7 +42,7 @@ def main():
             loss.backward()
             optimizer.step()
 
-    torch.save(vae.state_dict(), 'vae.cfg')
+    torch.save(vae.state_dict(), 'model.pth')
     
     # Generate sample output
     vae.eval()
