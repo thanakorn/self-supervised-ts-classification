@@ -5,10 +5,10 @@ from model.sequence_decoder import SeqenceDecoder
 from utils.utils import get_class
 
 class LatentEncoder(Module):
-    def __init__(self, hidden_dim, embedding_dim):
+    def __init__(self, input_dim, output_dim):
         super(LatentEncoder, self).__init__()
-        self.hidden_to_mean = Linear(hidden_dim, embedding_dim)
-        self.hidden_to_logvar = Linear(hidden_dim, embedding_dim)
+        self.hidden_to_mean = Linear(input_dim, output_dim)
+        self.hidden_to_logvar = Linear(input_dim, output_dim)
 
         init.xavier_uniform_(self.hidden_to_mean.weight)
         init.xavier_uniform_(self.hidden_to_logvar.weight)
@@ -25,16 +25,16 @@ class LatentEncoder(Module):
             return mean
 
 class SequenceVAE(Module):
-    def __init__(self, input_dim: int, seq_len: int, hidden_dims: list, cell_type = RNN):
+    def __init__(self, input_dim: int, seq_len: int, hidden_dims: list, embedding_dim: int, cell_type = RNN):
         super(SequenceVAE, self).__init__()
         self.encoder = SeqenceEncoder(
             input_dim=input_dim, 
             hidden_dims=hidden_dims, 
             cell_type=cell_type
         )
-        self.laten_encoder = LatentEncoder(hidden_dims[-1], hidden_dims[-1])
+        self.laten_encoder = LatentEncoder(input_dim=hidden_dims[-1], output_dim=embedding_dim)
         self.decoder = SeqenceDecoder(
-            input_dim=hidden_dims[-1], 
+            input_dim=embedding_dim, 
             output_dim=input_dim, 
             output_len=seq_len, 
             hidden_dims=hidden_dims[::-1], 
@@ -46,7 +46,8 @@ class SequenceVAE(Module):
         return SequenceVAE(
                 input_dim=int(config['input_dim']), 
                 seq_len=int(config['len']), 
-                hidden_dims=[int(c) for c in config['hidden_dims'].split(',')], 
+                hidden_dims=[int(c) for c in config['hidden_dims'].split(',')],
+                embedding_dim=int(config['embedding_dim']),
                 cell_type=get_class('torch.nn', config['cell_type'])
                )
 

@@ -10,6 +10,9 @@ from dataloader.ecg_dataset import ECGDataset
 from model.sequence_vae import SequenceVAE
 from utils.utils import *
 
+torch.manual_seed(0)
+np.random.seed(0)
+
 def compute_loss(loss_fn, input, output):
     recon, mean, logvar = output
     recon_loss = loss_fn(recon, input)
@@ -24,7 +27,7 @@ def main():
     data = pd.read_csv(conf['data']['path'], delimiter='  ', header=None)
     X = np.expand_dims(data.values[:,1:], axis=-1)
     dataset = ECGDataset(X)
-    dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
     vae = SequenceVAE.from_config(conf._sections['model'])
 
@@ -40,6 +43,7 @@ def main():
             loss = compute_loss(loss_fn, x, output)
             ep_loss = ep_loss + loss.item()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(vae.parameters(), max_norm = 5)
             optimizer.step()
 
     torch.save(vae.state_dict(), 'model.pth')
@@ -61,7 +65,7 @@ def main():
 
     # Visualize embedding vectors
     embeddings = vae.encoder(torch.tensor(X).float()).detach().numpy()
-    dim_reductor = TSNE(n_components=2)
+    dim_reductor = TSNE(n_components=2, perplexity=80, n_iter=3000)
     r_embeddings = dim_reductor.fit_transform(embeddings)
     plt.figure()
     plt.scatter(r_embeddings[:,0], r_embeddings[:,1], marker='.')
