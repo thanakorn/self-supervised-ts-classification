@@ -14,6 +14,7 @@ def main():
     cluster_to_class = lambda c : cluster_class[c]
     cluster_to_class = np.vectorize(cluster_to_class)
     classes = cluster_to_class(cluster_ids)
+    np.savetxt('labels.txt', classes, fmt='%d')
 
     data = pd.read_csv(conf['data']['path'], delimiter='  ', header=None)
     data = np.expand_dims(data.values[:,1:], axis=-1)
