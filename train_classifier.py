@@ -10,9 +10,9 @@ from model.sequence_vae import SequenceVAE
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
-def plot_cm(cm, ax):
+def plot_cm(cm, ax, title=''):
     seaborn.heatmap(cm, ax=ax, cmap='coolwarm', annot=True, fmt='.2f', cbar=False)
-    ax.set_title('Train')
+    ax.set_title(title)
     ax.set_xlabel('Predict')
     ax.set_ylabel('Actual')
 
@@ -34,7 +34,7 @@ def main():
     
     classifier_conf = conf._sections['classifier']
     classifier = RandomForestClassifier(
-        n_estimators=classifier_conf.get('n_estimators', 100),
+        n_estimators=classifier_conf.get('n_estimators', 200),
         max_features=classifier_conf.get('max_features', 'sqrt'),
         max_depth=classifier_conf.get('max_depth', 4),
         random_state=42
@@ -50,9 +50,18 @@ def main():
     test_predict = classifier.predict(test_embeddings)
     test_cm = confusion_matrix(Y_test, test_predict, normalize='true')
 
+    _, axes = plt.subplots(ncols=3, nrows=3, figsize=(7,6))
+    for row in axes:
+        for ax in row:
+            i = np.random.randint(0, X_train.shape[0])
+            ax.plot(X_train[i])
+            ax.set_title('Label = %d' % train_predict[i])
+            ax.xaxis.set_visible(False)
+    plt.savefig('classifier_output.png', bbox_inches='tight')
+
     _, axes = plt.subplots(ncols=2, figsize=(8,4))
-    plot_cm(train_cm, axes[0])
-    plot_cm(test_cm, axes[1])
+    plot_cm(train_cm, axes[0], 'Train')
+    plot_cm(test_cm, axes[1], 'Test')
     plt.savefig('classifier_performance.png', bbox_inches='tight')
 
 if __name__=='__main__':
